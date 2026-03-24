@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEFAZ-BA · Auditor Fiscal · Tracker de Desempenho</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c24;
+    --surface3: #1e2330;
+    --border: #252b38;
+    --border2: #2e3748;
+    --accent: #00e5a0;
+    --accent2: #0090ff;
+    --warn: #ffb800;
+    --danger: #ff4444;
+    --text: #e8ecf4;
+    --text2: #8b95a8;
+    --text3: #4e5666;
+    --green: #00e5a0;
+    --yellow: #ffb800;
+    --red: #ff4444;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BACKGROUND */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HEADER */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,12,16,.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo .badge {
+    background: var(--accent);
+    color: #000;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: .08em;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* NAV */
+  nav {
+    display: flex;
+    gap: 4px;
+    padding: 16px 24px 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .nav-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text2);
+    background: transparent;
+    border: none;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all .2s;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+
+  .nav-btn:hover { color: var(--text); }
+  .nav-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* MAIN */
+  main {
+    position: relative;
+    z-index: 1;
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* PANELS */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+
+  /* GRID LAYOUTS */
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  /* STAT CARDS */
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.yellow::before { background: var(--yellow); }
+  .stat-card.red::before { background: var(--red); }
+  .stat-card.blue::before { background: var(--accent2); }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-value.green { color: var(--green); }
+  .stat-value.yellow { color: var(--yellow); }
+  .stat-value.red { color: var(--red); }
+  .stat-value.blue { color: var(--accent2); }
+
+  .stat-sub {
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  /* PROGRESS BAR */
+  .progress-wrap { margin-top: 8px; }
+
+  .progress-bar {
+    height: 4px;
+    background: var(--surface3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width .6s ease;
+  }
+
+  .progress-fill.green { background: var(--green); }
+  .progress-fill.yellow { background: var(--yellow); }
+  .progress-fill.red { background: var(--red); }
+
+  /* BUTTONS */
+  .btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .06em;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: all .2s;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .btn-primary:hover { background: #00ffc0; transform: translateY(-1px); }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { color: var(--text); border-color: var(--border2); }
+
+  .btn-danger {
+    background: rgba(255,68,68,.1);
+    color: var(--red);
+    border: 1px solid rgba(255,68,68,.2);
+  }
+  .btn-danger:hover { background: rgba(255,68,68,.2); }
+
+  .btn-sm { font-size: 10px; padding: 5px 10px; }
+
+  /* TABLE */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead th {
+    background: var(--surface2);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .15s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+
+  tbody td {
+    padding: 10px 14px;
+    color: var(--text);
+    vertical-align: middle;
+  }
+
+  /* BADGE */
+  .badge {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+
+  .badge-essencial { background: rgba(0,229,160,.15); color: var(--accent); border: 1px solid rgba(0,229,160,.3); }
+  .badge-importante { background: rgba(0,144,255,.15); color: var(--accent2); border: 1px solid rgba(0,144,255,.3); }
+  .badge-secundario { background: rgba(255,184,0,.12); color: var(--warn); border: 1px solid rgba(255,184,0,.25); }
+  .badge-perfumaria { background: rgba(139,149,168,.1); color: var(--text3); border: 1px solid var(--border); }
+
+  .pct-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .pct-chip.good { color: var(--green); }
+  .pct-chip.warn { color: var(--yellow); }
+  .pct-chip.bad { color: var(--red); }
+
+  /* FORM */
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  label {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  input, select {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color .2s;
+    width: 100%;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+  }
+
+  select option { background: var(--surface2); }
+
+  /* ALERT BOX */
+  .alert {
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.6;
+  }
+
+  .alert-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  .alert-info { background: rgba(0,144,255,.08); border: 1px solid rgba(0,144,255,.2); color: #7ec6ff; }
+  .alert-warn { background: rgba(255,184,0,.08); border: 1px solid rgba(255,184,0,.2); color: #ffd166; }
+  .alert-danger { background: rgba(255,68,68,.08); border: 1px solid rgba(255,68,68,.2); color: #ff9999; }
+  .alert-success { background: rgba(0,229,160,.08); border: 1px solid rgba(0,229,160,.2); color: #00e5a0; }
+
+  /* PLAN CARD */
+  .plan-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    transition: border-color .2s;
+  }
+
+  .plan-item:hover { border-color: var(--border2); }
+
+  .plan-item-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .plan-item-index {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text3);
+    min-width: 28px;
+  }
+
+  .plan-item-disc {
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 2px;
+  }
+
+  .plan-item-assunto {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .plan-type {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    padding: 3px 9px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .plan-type.study { background: rgba(0,229,160,.12); color: var(--accent); }
+  .plan-type.review { background: rgba(0,144,255,.12); color: var(--accent2); }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-sub {
+    font-size: 12px;
+    color: var(--text3);
+    margin-bottom: 20px;
+  }
+
+  /* ACCORDION */
+  .accordion {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .accordion-header {
+    background: var(--surface);
+    padding: 14px 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background .15s;
+    gap: 12px;
+  }
+
+  .accordion-header:hover { background: var(--surface2); }
+
+  .accordion-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .accordion-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .accordion-chevron {
+    color: var(--text3);
+    transition: transform .2s;
+    flex-shrink: 0;
+  }
+
+  .accordion-header.open .accordion-chevron { transform: rotate(180deg); }
+
+  .accordion-body {
+    display: none;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+  }
+
+  .accordion-body.open { display: block; }
+
+  /* MINI INPUT ROW */
+  .mini-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mini-input-row:last-child { border-bottom: none; }
+
+  .mini-input-row label {
+    min-width: 140px;
+    font-size: 11px;
+    color: var(--text2);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .mini-input {
+    width: 80px !important;
+    text-align: center;
+    padding: 6px 8px !important;
+    font-size: 12px !important;
+  }
+
+  /* RANKING */
+  .rank-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .rank-item:last-child { border-bottom: none; }
+
+  .rank-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text3);
+    min-width: 24px;
+  }
+
+  .rank-bar-wrap {
+    flex: 1;
+  }
+
+  .rank-label {
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* CHART CONTAINER */
+  .chart-container {
+    position: relative;
+    height: 300px;
+  }
+
+  /* TOAST */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 18px;
+    font-size: 12px;
+    color: var(--text);
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all .25s;
+    max-width: 300px;
+  }
+
+  #toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* DATE DISPLAY */
+  .date-chip {
+    font-size: 11px;
+    color: var(--text3);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 600px) {
+    main { padding: 16px; }
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr; }
+    header { padding: 0 16px; }
+    nav { padding: 12px 16px 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span>SEFAZ·BA</span>
+    <span class="badge">AUDITOR FISCAL</span>
+  </div>
+  <div class="header-actions">
+    <span class="date-chip" id="headerDate"></span>
+    <button class="btn btn-secondary btn-sm" onclick="exportData()">⬆ Export</button>
+    <label class="btn btn-secondary btn-sm" style="cursor:pointer">
+      ⬇ Import
+      <input type="file" accept=".json" style="display:none" onchange="importData(event)">
+    </label>
+  </div>
+</header>
+
+<nav>
+  <button class="nav-btn active" onclick="showPanel('dashboard',this)">Dashboard</button>
+  <button class="nav-btn" onclick="showPanel('plano',this)">Plano do Dia</button>
+  <button class="nav-btn" onclick="showPanel('questoes',this)">Registrar Questões</button>
+  <button class="nav-btn" onclick="showPanel('disciplinas',this)">Disciplinas</button>
+  <button class="nav-btn" onclick="showPanel('ranking',this)">Ranking Crítico</button>
+  <button class="nav-btn" onclick="showPanel('evolucao',this)">Evolução</button>
+</nav>
+
+<main>
+
+<!-- ===== DASHBOARD ===== -->
+<div id="panel-dashboard" class="panel active">
+  <div class="section-title">Visão Geral <span style="color:var(--text3);font-size:14px;font-weight:400">Meta: 90%</span></div>
+  <div class="section-sub">Acompanhamento de desempenho em tempo real</div>
+
+  <div class="grid-4" id="statsGerais"></div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Observações Inteligentes</span>
+        <button class="btn btn-secondary btn-sm" onclick="gerarObservacoes()">↺ Atualizar</button>
+      </div>
+      <div id="observacoes"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Plano de Hoje</span>
+        <span style="font-size:11px;color:var(--text3)" id="planDate"></span>
+      </div>
+      <div id="planoDiaDash"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Desempenho por Disciplina</span>
+      <button class="btn btn-secondary btn-sm" onclick="showPanel('disciplinas',null)">Ver todas</button>
+    </div>
+    <div id="discSummary"></div>
+  </div>
+</div>
+
+<!-- ===== PLANO DO DIA ===== -->
+<div id="panel-plano" class="panel">
+  <div class="section-title">Plano de Estudo do Dia</div>
+  <div class="section-sub" id="planSub"></div>
+
+  <div class="grid-2" style="margin-bottom:20px">
+    <div class="card" style="padding:16px">
+      <div class="card-title" style="margin-bottom:8px">Configurações do Plano</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data do plano</label>
+          <input type="date" id="planDataInput">
+        </div>
+        <div class="form-group">
+          <label>Máx. assuntos/disciplina</label>
+          <input type="number" id="planMaxPorDisc" value="3" min="1" max="10">
+        </div>
+        <div class="form-group">
+          <label>Total máx. de itens</label>
+          <input type="number" id="planMaxTotal" value="15" min="5" max="40">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="gerarPlanoDia()">⚡ Gerar Plano</button>
+    </div>
+    <div class="card" style="padding:16px">
+      <div class="card-title" style="margin-bottom:8px">Legenda</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+        <div style="display:flex;align-items:center;gap:8px"><span class="plan-type study">Estudo</span> <span style="color:var(--text2)">Assunto novo / pouco explorado</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="plan-type review">Revisão</span> <span style="color:var(--text2)">Revisão por ciclo espaçado</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="planoItens"></div>
+</div>
+
+<!-- ===== REGISTRAR QUESTÕES ===== -->
+<div id="panel-questoes" class="panel">
+  <div class="section-title">Registrar Questões</div>
+  <div class="section-sub">Adicione questões respondidas para cada assunto</div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header"><span class="card-title">Nova Sessão de Questões</span></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Disciplina</label>
+        <select id="qDisciplina" onchange="fillAssuntos()"></select>
+      </div>
+      <div class="form-group">
+        <label>Assunto</label>
+        <select id="qAssunto"></select>
+      </div>
+      <div class="form-group">
+        <label>Data</label>
+        <input type="date" id="qData">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Total Respondidas</label>
+        <input type="number" id="qTotal" min="1" max="200" placeholder="Ex: 20">
+      </div>
+      <div class="form-group">
+        <label>Acertos</label>
+        <input type="number" id="qAcertos" min="0" max="200" placeholder="Ex: 16">
+      </div>
+      <div class="form-group">
+        <label>Erros (automático)</label>
+        <input type="number" id="qErros" readonly style="opacity:.5">
+      </div>
+      <div class="form-group">
+        <label>% Acerto (automático)</label>
+        <input type="number" id="qPct" readonly style="opacity:.5">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="registrarQuestao()">✓ Registrar</button>
+      <button class="btn btn-secondary" onclick="clearFormQ()">✕ Limpar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Histórico Recente</span>
+      <select id="filterHistDisc" onchange="renderHistorico()" style="width:200px">
+        <option value="">Todas as disciplinas</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Disciplina</th>
+            <th>Assunto</th>
+            <th>Total</th>
+            <th>Acertos</th>
+            <th>Erros</th>
+            <th>%</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbHistorico"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DISCIPLINAS ===== -->
+<div id="panel-disciplinas" class="panel">
+  <div class="section-title">Disciplinas & Assuntos</div>
+  <div class="section-sub">Desempenho detalhado por disciplina e classificação</div>
+  <div id="discAccordions"></div>
+</div>
+
+<!-- ===== RANKING CRÍTICO ===== -->
+<div id="panel-ranking" class="panel">
+  <div class="section-title">Ranking Crítico</div>
+  <div class="section-sub">Assuntos que precisam de atenção imediata</div>
+
+  <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="renderRanking()">↺ Atualizar</button>
+    <button class="btn btn-secondary" onclick="filterRanking('todos')">Todos</button>
+    <button class="btn btn-secondary" onclick="filterRanking('essencial')">Só Essenciais</button>
+    <button class="btn btn-secondary" onclick="filterRanking('baixo')">Abaixo de 60%</button>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">🔴 Pontos Críticos (abaixo de 60%)</div>
+      <div id="rankCritico"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">🟡 Atenção (60–79%)</div>
+      <div id="rankAtencao"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-title" style="margin-bottom:16px">🟢 Próximos da meta (80–89%)</div>
+    <div id="rankPerto"></div>
+  </div>
+</div>
+
+<!-- ===== EVOLUÇÃO ===== -->
+<div id="panel-evolucao" class="panel">
+  <div class="section-title">Evolução de Desempenho</div>
+  <div class="section-sub">Acompanhe seu progresso ao longo do tempo</div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header">
+      <span class="card-title">% Médio de Acertos por Dia</span>
+      <select id="evolDisc" onchange="renderEvolucao()">
+        <option value="">Todas as disciplinas</option>
+      </select>
+    </div>
+    <div class="chart-container">
+      <canvas id="chartEvolucao"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Snapshot por Disciplina (Hoje)</span>
+    </div>
+    <div class="chart-container">
+      <canvas id="chartDisc"></canvas>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+// =============================================
+// DADOS INICIAIS
+// =============================================
+const DISCIPLINAS_INIT = [
+  { nome: 'Tecnologia da Informação', assuntos: [
+    'Redes de Computadores','Banco de Dados','Segurança da Informação','Sistemas Operacionais',
+    'Programação e Lógica','Governança de TI','Cloud Computing','Análise de Sistemas'
+  ]},
+  { nome: 'Direito Tributário', assuntos: [
+    'Princípios Tributários','Impostos Federais','ICMS','ISS','Obrigação Tributária',
+    'Crédito Tributário','Lançamento','Decadência e Prescrição','Exclusão do Crédito'
+  ]},
+  { nome: 'Legislação Tributária/BA', assuntos: [
+    'RICMS-BA','SEFAZ-BA Organização','Processo Administrativo Fiscal','Infrações e Penalidades',
+    'Benefícios Fiscais BA','Substituição Tributária BA'
+  ]},
+  { nome: 'Contabilidade Geral', assuntos: [
+    'Balanço Patrimonial','DRE','DLPA','DFC','Lançamentos Contábeis',
+    'Depreciação','Estoques','Patrimônio Líquido'
+  ]},
+  { nome: 'Língua Portuguesa', assuntos: [
+    'Interpretação de Texto','Ortografia','Morfologia','Sintaxe','Pontuação',
+    'Coerência e Coesão','Redação Oficial'
+  ]},
+  { nome: 'Direito Constitucional', assuntos: [
+    'Princípios Fundamentais','Direitos e Garantias','Organização do Estado',
+    'Processo Legislativo','Poder Executivo','Poder Judiciário','Ordem Econômica'
+  ]},
+  { nome: 'Direito Administrativo', assuntos: [
+    'Princípios Administrativos','Atos Administrativos','Licitações','Contratos Administrativos',
+    'Servidores Públicos','Responsabilidade Civil do Estado','Improbidade Administrativa'
+  ]},
+  { nome: 'Estatística', assuntos: [
+    'Estatística Descritiva','Probabilidade','Distribuições','Inferência Estatística',
+    'Regressão Linear','Amostragem'
+  ]},
+  { nome: 'Matemática Financeira', assuntos: [
+    'Juros Simples','Juros Compostos','Desconto','Séries de Pagamentos',
+    'Sistemas de Amortização','Análise de Investimentos'
+  ]},
+  { nome: 'Raciocínio Lógico e Matemático', assuntos: [
+    'Proposições Lógicas','Argumentação','Diagramas Lógicos','Teoria dos Conjuntos',
+    'Sequências Numéricas','Porcentagem e Proporcionalidade'
+  ]},
+  { nome: 'Gestão Organizacional', assuntos: [
+    'Planejamento Estratégico','Gestão por Processos','Gestão de Pessoas',
+    'Gestão por Competências','BSC','Qualidade Total'
+  ]},
+  { nome: 'Noções de Igualdade Racial e de Gênero', assuntos: [
+    'Legislação Racial','Legislação de Gênero','Políticas Afirmativas','Inclusão Social'
+  ]},
+  { nome: 'Direito Civil', assuntos: [
+    'Pessoas e Bens','Fatos Jurídicos','Negócio Jurídico','Contratos','Responsabilidade Civil'
+  ]},
+  { nome: 'Direito Penal', assuntos: [
+    'Teoria do Crime','Crimes contra a Administração Pública','Lei de Lavagem de Dinheiro',
+    'Crimes Tributários'
+  ]},
+  { nome: 'Direito Empresarial', assuntos: [
+    'Direito de Empresa','Sociedades','Títulos de Crédito','Recuperação e Falência'
+  ]},
+  { nome: 'Dissertativa', assuntos: [
+    'Estrutura Dissertativa','Argumentação','Norma Culta','Prática Redação'
+  ]}
+];
+
+const CLASSIFICACOES = ['Essencial','Importante','Secundário','Perfumaria'];
+const CICLO_REVISAO = [1, 3, 7, 15, 30]; // dias
+
+// =============================================
+// STATE
+// =============================================
+let state = {
+  disciplinas: [],    // { nome, assuntos: [{nome, classificacao}] }
+  questoes: [],       // { id, data, disciplina, assunto, total, acertos, erros, pct }
+  ultimaRevisao: {},  // key: disc|assunto -> { data, cicloIdx }
+  chartEvolucao: null,
+  chartDisc: null
+};
+
+// =============================================
+// PERSIST
+// =============================================
+function save() {
+  localStorage.setItem('sefaz_tracker_v2', JSON.stringify(state));
+}
+
+function load() {
+  const raw = localStorage.getItem('sefaz_tracker_v2');
+  if (raw) {
+    try {
+      const loaded = JSON.parse(raw);
+      state = { ...state, ...loaded };
+    } catch(e) {}
+  }
+  // Inicializa disciplinas se vazio
+  if (!state.disciplinas || state.disciplinas.length === 0) {
+    state.disciplinas = DISCIPLINAS_INIT.map(d => ({
+      nome: d.nome,
+      assuntos: d.assuntos.map(a => ({
+        nome: a,
+        classificacao: 'Importante'
+      }))
+    }));
+    save();
+  }
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `sefaz_tracker_${today()}.json`;
+  a.click();
+  toast('✓ Dados exportados com sucesso');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      state = { ...state, ...imported };
+      save();
+      refreshAll();
+      toast('✓ Dados importados com sucesso');
+    } catch(err) {
+      toast('✗ Erro ao importar arquivo');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// =============================================
+// UTILS
+// =============================================
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function formatDate(d) {
+  if (!d) return '-';
+  const parts = d.split('-');
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+function pctColor(pct) {
+  if (pct >= 90) return 'green';
+  if (pct >= 70) return 'blue';
+  if (pct >= 60) return 'yellow';
+  return 'red';
+}
+
+function toast(msg, duration = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function uid() {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+// Calcula métricas agregadas de um assunto
+function getAssuntoStats(disc, assunto) {
+  const qs = state.questoes.filter(q => q.disciplina === disc && q.assunto === assunto);
+  const total = qs.reduce((s, q) => s + q.total, 0);
+  const acertos = qs.reduce((s, q) => s + q.acertos, 0);
+  const erros = total - acertos;
+  const pct = total > 0 ? Math.round(acertos / total * 100) : null;
+  return { total, acertos, erros, pct };
+}
+
+function getDiscStats(disc) {
+  const qs = state.questoes.filter(q => q.disciplina === disc);
+  const total = qs.reduce((s, q) => s + q.total, 0);
+  const acertos = qs.reduce((s, q) => s + q.acertos, 0);
+  const erros = total - acertos;
+  const pct = total > 0 ? Math.round(acertos / total * 100) : null;
+  return { total, acertos, erros, pct };
+}
+
+function getGlobalStats() {
+  const total = state.questoes.reduce((s, q) => s + q.total, 0);
+  const acertos = state.questoes.reduce((s, q) => s + q.acertos, 0);
+  const erros = total - acertos;
+  const pct = total > 0 ? Math.round(acertos / total * 100) : null;
+  return { total, acertos, erros, pct };
+}
+
+// =============================================
+// PANELS
+// =============================================
+function showPanel(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (btn) {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  // Refresh
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'plano') renderPlanoConfig();
+  if (name === 'questoes') renderQuestoesPanel();
+  if (name === 'disciplinas') renderDiscPanel();
+  if (name === 'ranking') renderRanking();
+  if (name === 'evolucao') renderEvolucao();
+}
+
+// =============================================
+// DASHBOARD
+// =============================================
+function renderDashboard() {
+  const g = getGlobalStats();
+  const pct = g.pct ?? 0;
+  const color = pctColor(pct);
+  const deficit = 90 - pct;
+
+  document.getElementById('statsGerais').innerHTML = `
+    <div class="stat-card ${color}">
+      <div class="stat-label">% Geral de Acertos</div>
+      <div class="stat-value ${color}">${g.pct ?? '--'}%</div>
+      <div class="stat-sub">Meta: 90%</div>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill ${color}" style="width:${Math.min(pct,100)}%"></div></div>
+      </div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">Total de Questões</div>
+      <div class="stat-value blue">${g.total}</div>
+      <div class="stat-sub">${g.acertos} acertos · ${g.erros} erros</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Disciplinas com ≥90%</div>
+      <div class="stat-value green">${state.disciplinas.filter(d => (getDiscStats(d.nome).pct??0) >= 90).length}</div>
+      <div class="stat-sub">de ${state.disciplinas.length} disciplinas</div>
+    </div>
+    <div class="stat-card ${deficit > 20 ? 'red' : deficit > 5 ? 'yellow' : 'green'}">
+      <div class="stat-label">Déficit para Meta</div>
+      <div class="stat-value ${deficit > 20 ? 'red' : deficit > 5 ? 'yellow' : 'green'}">${pct > 0 ? (deficit > 0 ? '+' + deficit + '%' : '✓') : '--'}</div>
+      <div class="stat-sub">${deficit > 0 ? 'para atingir 90%' : 'Meta atingida!'}</div>
+    </div>
+  `;
+
+  gerarObservacoes();
+  renderPlanoRapido();
+  renderDiscSummary();
+}
+
+function renderDiscSummary() {
+  const html = state.disciplinas.map(d => {
+    const s = getDiscStats(d.nome);
+    const pct = s.pct ?? 0;
+    const color = pctColor(pct);
+    return `
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="min-width:200px;font-size:12px;color:var(--text2)">${d.nome}</div>
+        <div style="flex:1;min-width:80px">
+          <div class="progress-bar" style="height:5px"><div class="progress-fill ${color}" style="width:${Math.min(pct,100)}%"></div></div>
+        </div>
+        <div class="pct-chip ${color}" style="min-width:45px;justify-content:flex-end">${s.pct !== null ? s.pct + '%' : '--'}</div>
+        <div style="min-width:80px;font-size:11px;color:var(--text3)">${s.total} questões</div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('discSummary').innerHTML = html || '<div style="color:var(--text3);font-size:12px">Nenhum dado ainda. Registre questões para começar.</div>';
+}
+
+function renderPlanoRapido() {
+  const plano = gerarLogicaPlano(today(), 3, 6);
+  const el = document.getElementById('planoDiaDash');
+  document.getElementById('planDate').textContent = formatDate(today());
+  if (plano.length === 0) {
+    el.innerHTML = '<div class="alert alert-info"><span class="alert-icon">ℹ</span>Registre questões para gerar o plano automaticamente.</div>';
+    return;
+  }
+  el.innerHTML = plano.slice(0, 6).map((item, i) => `
+    <div class="plan-item">
+      <div class="plan-item-left">
+        <div class="plan-item-index">${String(i+1).padStart(2,'0')}</div>
+        <div>
+          <div class="plan-item-disc">${item.disciplina}</div>
+          <div class="plan-item-assunto">${item.assunto}</div>
+        </div>
+      </div>
+      <span class="plan-type ${item.tipo === 'Revisão' ? 'review' : 'study'}">${item.tipo}</span>
+    </div>
+  `).join('') + (plano.length > 6 ? `<div style="text-align:center;padding:8px;font-size:11px;color:var(--text3)">+ ${plano.length-6} itens · <a href="#" onclick="showPanel('plano',null);event.preventDefault()" style="color:var(--accent)">ver plano completo</a></div>` : '');
+}
+
+// =============================================
+// OBSERVAÇÕES INTELIGENTES
+// =============================================
+function gerarObservacoes() {
+  const obs = [];
+  const global = getGlobalStats();
+
+  if (global.total === 0) {
+    obs.push({ tipo: 'info', texto: 'Nenhuma questão registrada ainda. Comece registrando suas primeiras questões para receber recomendações.' });
+  } else {
+    // Assuntos essenciais com baixo desempenho
+    const essenciaisCriticos = [];
+    state.disciplinas.forEach(d => {
+      d.assuntos.filter(a => a.classificacao === 'Essencial').forEach(a => {
+        const s = getAssuntoStats(d.nome, a.nome);
+        if (s.pct !== null && s.pct < 60) essenciaisCriticos.push({ disc: d.nome, assunto: a.nome, pct: s.pct });
+      });
+    });
+    if (essenciaisCriticos.length > 0) {
+      obs.push({ tipo: 'danger', texto: `🔴 Baixo desempenho em ${essenciaisCriticos.length} assunto(s) ESSENCIAL(IS): ${essenciaisCriticos.slice(0,2).map(e => `${e.assunto} (${e.pct}%)`).join(', ')}. Priorizar revisão imediata.` });
+    }
+
+    // Disciplinas com alta taxa de erro
+    state.disciplinas.forEach(d => {
+      const s = getDiscStats(d.nome);
+      if (s.pct !== null && s.pct < 50) {
+        obs.push({ tipo: 'warn', texto: `🟡 Alta taxa de erro em ${d.nome} (${s.pct}%) — aumentar volume de exercícios e revisões.` });
+      }
+    });
+
+    // Próximo da meta
+    state.disciplinas.forEach(d => {
+      const s = getDiscStats(d.nome);
+      if (s.pct !== null && s.pct >= 80 && s.pct < 90) {
+        obs.push({ tipo: 'success', texto: `🟢 Você está próximo da meta de 90% em ${d.nome} (${s.pct}%). Continue assim!` });
+      }
+    });
+
+    // Meta atingida
+    const metaAting = state.disciplinas.filter(d => (getDiscStats(d.nome).pct ?? 0) >= 90);
+    if (metaAting.length > 0) {
+      obs.push({ tipo: 'success', texto: `✅ Meta de 90% atingida em: ${metaAting.map(d => d.nome).join(', ')}.` });
+    }
+
+    // Geral
+    if (global.pct !== null) {
+      if (global.pct >= 90) obs.push({ tipo: 'success', texto: `🏆 Parabéns! Desempenho geral de ${global.pct}% — acima da meta de 90%.` });
+      else if (global.pct >= 80) obs.push({ tipo: 'info', texto: `📊 Desempenho geral de ${global.pct}%. Faltam ${90 - global.pct}% para atingir a meta.` });
+      else obs.push({ tipo: 'warn', texto: `📊 Desempenho geral de ${global.pct}%. Foco total nos assuntos essenciais para evoluir rapidamente.` });
+    }
+  }
+
+  document.getElementById('observacoes').innerHTML = obs.slice(0,5).map(o =>
+    `<div class="alert alert-${o.tipo}"><div>${o.texto}</div></div>`
+  ).join('') || '<div style="color:var(--text3);font-size:12px">Nenhuma observação disponível.</div>';
+}
+
+// =============================================
+// PLANO DO DIA (ALGORITMO)
+// =============================================
+function gerarLogicaPlano(dataAlvo, maxPorDisc, maxTotal) {
+  const hoje = new Date(dataAlvo + 'T00:00:00');
+  const itens = [];
+
+  state.disciplinas.forEach(disc => {
+    let count = 0;
+    const candidatos = [];
+
+    disc.assuntos.forEach(assunto => {
+      const key = `${disc.nome}|${assunto.nome}`;
+      const stats = getAssuntoStats(disc.nome, assunto.nome);
+      const rev = (state.ultimaRevisao || {})[key] || null;
+
+      // Peso da classificação
+      const pesoClassif = { 'Essencial': 4, 'Importante': 3, 'Secundário': 2, 'Perfumaria': 1 }[assunto.classificacao] || 1;
+
+      // Verifica ciclo de revisão
+      let precisaRevisar = false;
+      let diasDesdeRevisao = 999;
+      if (rev) {
+        const ultima = new Date(rev.data + 'T00:00:00');
+        diasDesdeRevisao = Math.floor((hoje - ultima) / 86400000);
+        const cicloIdx = Math.min(rev.cicloIdx ?? 0, CICLO_REVISAO.length - 1);
+        const proximo = CICLO_REVISAO[cicloIdx];
+        precisaRevisar = diasDesdeRevisao >= proximo;
+      }
+
+      // Nunca estudou ou tem questões registradas
+      const nuncaEstudou = stats.total === 0;
+      const baixoDesempenho = stats.pct !== null && stats.pct < 70;
+
+      let prioridade = 0;
+      if (nuncaEstudou) prioridade = pesoClassif * 3;
+      else if (baixoDesempenho) prioridade = pesoClassif * (100 - (stats.pct ?? 100)) / 10;
+      else if (precisaRevisar) prioridade = pesoClassif * 2;
+
+      if (prioridade > 0 || precisaRevisar || nuncaEstudou) {
+        candidatos.push({
+          disciplina: disc.nome,
+          assunto: assunto.nome,
+          classificacao: assunto.classificacao,
+          tipo: precisaRevisar ? 'Revisão' : 'Estudo',
+          prioridade,
+          pct: stats.pct,
+          pesoClassif
+        });
+      }
+    });
+
+    // Ordena por prioridade desc
+    candidatos.sort((a, b) => b.prioridade - a.prioridade);
+    const selecionados = candidatos.slice(0, maxPorDisc);
+    itens.push(...selecionados);
+  });
+
+  // Ordena global: essenciais + baixo desempenho primeiro
+  itens.sort((a, b) => b.prioridade - a.prioridade || b.pesoClassif - a.pesoClassif);
+
+  return itens.slice(0, maxTotal);
+}
+
+function renderPlanoConfig() {
+  document.getElementById('planDataInput').value = today();
+  gerarPlanoDia();
+}
+
+function gerarPlanoDia() {
+  const data = document.getElementById('planDataInput').value || today();
+  const maxPorDisc = parseInt(document.getElementById('planMaxPorDisc').value) || 3;
+  const maxTotal = parseInt(document.getElementById('planMaxTotal').value) || 15;
+
+  document.getElementById('planSub').textContent = `Plano gerado para ${formatDate(data)} · Algoritmo de revisão espaçada`;
+
+  const plano = gerarLogicaPlano(data, maxPorDisc, maxTotal);
+  const el = document.getElementById('planoItens');
+
+  if (plano.length === 0) {
+    el.innerHTML = '<div class="alert alert-info"><span class="alert-icon">ℹ</span>Nenhum item gerado. Registre questões para ativar o algoritmo de revisão.</div>';
+    return;
+  }
+
+  el.innerHTML = plano.map((item, i) => `
+    <div class="plan-item">
+      <div class="plan-item-left">
+        <div class="plan-item-index">${String(i+1).padStart(2,'0')}</div>
+        <div>
+          <div class="plan-item-disc">${item.disciplina}</div>
+          <div class="plan-item-assunto">${item.assunto}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="badge badge-${item.classificacao.toLowerCase().replace('á','a').replace('ó','o').replace('ú','u').replace('é','e')}">${item.classificacao}</span>
+        ${item.pct !== null ? `<span class="pct-chip ${pctColor(item.pct)}">${item.pct}%</span>` : '<span style="font-size:11px;color:var(--text3)">novo</span>'}
+        <span class="plan-type ${item.tipo === 'Revisão' ? 'review' : 'study'}">${item.tipo}</span>
+        <button class="btn btn-secondary btn-sm" onclick="marcarRevisto('${item.disciplina}','${item.assunto}','${data}')">✓ Concluir</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function marcarRevisto(disc, assunto, data) {
+  const key = `${disc}|${assunto}`;
+  if (!state.ultimaRevisao) state.ultimaRevisao = {};
+  const atual = state.ultimaRevisao[key];
+  const cicloIdx = atual ? Math.min((atual.cicloIdx ?? 0) + 1, CICLO_REVISAO.length - 1) : 0;
+  state.ultimaRevisao[key] = { data, cicloIdx };
+  save();
+  gerarPlanoDia();
+  toast(`✓ ${assunto} marcado como concluído`);
+}
+
+// =============================================
+// QUESTÕES
+// =============================================
+function renderQuestoesPanel() {
+  // Preenche selects
+  const selDisc = document.getElementById('qDisciplina');
+  const selHistDisc = document.getElementById('filterHistDisc');
+  const selEvolDisc = document.getElementById('evolDisc');
+
+  const opts = state.disciplinas.map(d => `<option value="${d.nome}">${d.nome}</option>`).join('');
+  selDisc.innerHTML = opts;
+  selHistDisc.innerHTML = '<option value="">Todas as disciplinas</option>' + opts;
+  if (selEvolDisc) selEvolDisc.innerHTML = '<option value="">Todas as disciplinas</option>' + opts;
+
+  fillAssuntos();
+  renderHistorico();
+
+  const dateInput = document.getElementById('qData');
+  if (!dateInput.value) dateInput.value = today();
+
+  // Auto-calc
+  document.getElementById('qTotal').oninput = calcErrosPct;
+  document.getElementById('qAcertos').oninput = calcErrosPct;
+}
+
+function calcErrosPct() {
+  const total = parseInt(document.getElementById('qTotal').value) || 0;
+  const acertos = parseInt(document.getElementById('qAcertos').value) || 0;
+  const erros = Math.max(0, total - acertos);
+  const pct = total > 0 ? Math.round(acertos / total * 100) : 0;
+  document.getElementById('qErros').value = erros;
+  document.getElementById('qPct').value = pct;
+}
+
+function fillAssuntos() {
+  const discNome = document.getElementById('qDisciplina').value;
+  const disc = state.disciplinas.find(d => d.nome === discNome);
+  const sel = document.getElementById('qAssunto');
+  sel.innerHTML = disc ? disc.assuntos.map(a => `<option value="${a.nome}">${a.nome}</option>`).join('') : '';
+}
+
+function registrarQuestao() {
+  const disciplina = document.getElementById('qDisciplina').value;
+  const assunto = document.getElementById('qAssunto').value;
+  const data = document.getElementById('qData').value || today();
+  const total = parseInt(document.getElementById('qTotal').value);
+  const acertos = parseInt(document.getElementById('qAcertos').value);
+
+  if (!disciplina || !assunto) return toast('✗ Selecione disciplina e assunto');
+  if (!total || total < 1) return toast('✗ Informe o total de questões');
+  if (isNaN(acertos) || acertos < 0) return toast('✗ Informe os acertos');
+  if (acertos > total) return toast('✗ Acertos não pode ser maior que total');
+
+  const erros = total - acertos;
+  const pct = Math.round(acertos / total * 100);
+
+  state.questoes.push({ id: uid(), data, disciplina, assunto, total, acertos, erros, pct });
+
+  // Atualiza última revisão
+  const key = `${disciplina}|${assunto}`;
+  if (!state.ultimaRevisao) state.ultimaRevisao = {};
+  if (!state.ultimaRevisao[key]) {
+    state.ultimaRevisao[key] = { data, cicloIdx: 0 };
+  } else {
+    state.ultimaRevisao[key].data = data;
+  }
+
+  save();
+  clearFormQ();
+  renderHistorico();
+  toast('✓ Questões registradas com sucesso!');
+}
+
+function clearFormQ() {
+  document.getElementById('qTotal').value = '';
+  document.getElementById('qAcertos').value = '';
+  document.getElementById('qErros').value = '';
+  document.getElementById('qPct').value = '';
+}
+
+function renderHistorico() {
+  const filtro = document.getElementById('filterHistDisc')?.value || '';
+  const qs = [...state.questoes]
+    .filter(q => !filtro || q.disciplina === filtro)
+    .sort((a, b) => b.data.localeCompare(a.data))
+    .slice(0, 50);
+
+  const tbody = document.getElementById('tbHistorico');
+  tbody.innerHTML = qs.map(q => {
+    const color = pctColor(q.pct);
+    return `
+      <tr>
+        <td style="color:var(--text3)">${formatDate(q.data)}</td>
+        <td>${q.disciplina}</td>
+        <td>${q.assunto}</td>
+        <td>${q.total}</td>
+        <td style="color:var(--green)">${q.acertos}</td>
+        <td style="color:var(--red)">${q.erros}</td>
+        <td><span class="pct-chip ${color}">${q.pct}%</span></td>
+        <td><button class="btn btn-danger btn-sm" onclick="deletarQuestao('${q.id}')">✕</button></td>
+      </tr>
+    `;
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">Nenhum registro encontrado</td></tr>';
+}
+
+function deletarQuestao(id) {
+  state.questoes = state.questoes.filter(q => q.id !== id);
+  save();
+  renderHistorico();
+  toast('Registro removido');
+}
+
+// =============================================
+// DISCIPLINAS
+// =============================================
+function renderDiscPanel() {
+  const el = document.getElementById('discAccordions');
+  el.innerHTML = state.disciplinas.map((d, di) => {
+    const stats = getDiscStats(d.nome);
+    const color = pctColor(stats.pct ?? 0);
+
+    const byClass = {};
+    CLASSIFICACOES.forEach(c => byClass[c] = []);
+    d.assuntos.forEach(a => {
+      const c = a.classificacao || 'Importante';
+      if (!byClass[c]) byClass[c] = [];
+      byClass[c].push(a);
+    });
+
+    const classSummary = CLASSIFICACOES.map(c => {
+      const lista = byClass[c];
+      if (lista.length === 0) return '';
+      const total = lista.reduce((s, a) => s + getAssuntoStats(d.nome, a.nome).total, 0);
+      const acertos = lista.reduce((s, a) => s + getAssuntoStats(d.nome, a.nome).acertos, 0);
+      const pct = total > 0 ? Math.round(acertos / total * 100) : null;
+      return `<span style="font-size:10px;color:var(--text3)">${c}: <span class="${pct !== null ? pctColor(pct) : ''}" style="color:${pct === null ? 'var(--text3)' : ''}">${pct !== null ? pct + '%' : '--'}</span></span>`;
+    }).filter(Boolean).join(' · ');
+
+    const assuntosHtml = d.assuntos.map((a, ai) => {
+      const s = getAssuntoStats(d.nome, a.nome);
+      const c = pctColor(s.pct ?? 0);
+      return `
+        <div class="mini-input-row">
+          <div style="flex:1;min-width:160px">
+            <div style="font-size:12px;color:var(--text)">${a.nome}</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+              <select onchange="setClassificacao(${di},${ai},this.value)" style="width:130px;padding:4px 6px;font-size:10px">
+                ${CLASSIFICACOES.map(cl => `<option value="${cl}" ${cl === a.classificacao ? 'selected' : ''}>${cl}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+            <span style="font-size:11px;color:var(--text3)">${s.total} questões</span>
+            <span style="font-size:11px;color:var(--green)">${s.acertos} ✓</span>
+            <span style="font-size:11px;color:var(--red)">${s.erros} ✗</span>
+            ${s.pct !== null ? `<span class="pct-chip ${c}">${s.pct}%</span>` : '<span style="font-size:11px;color:var(--text3)">sem dados</span>'}
+            ${s.pct !== null ? `<div style="width:60px"><div class="progress-bar"><div class="progress-fill ${c}" style="width:${s.pct}%"></div></div></div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <div>
+            <div class="accordion-title">${d.nome}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${classSummary}</div>
+          </div>
+          <div class="accordion-meta">
+            <div style="text-align:right">
+              <div class="pct-chip ${color}" style="font-size:16px">${stats.pct !== null ? stats.pct + '%' : '--'}</div>
+              <div style="font-size:10px;color:var(--text3)">${stats.total} questões</div>
+            </div>
+            <div class="progress-bar" style="width:80px"><div class="progress-fill ${color}" style="width:${Math.min(stats.pct??0,100)}%"></div></div>
+            <div class="accordion-chevron">▼</div>
+          </div>
+        </div>
+        <div class="accordion-body">
+          ${assuntosHtml}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleAccordion(header) {
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+
+function setClassificacao(di, ai, val) {
+  state.disciplinas[di].assuntos[ai].classificacao = val;
+  save();
+  toast('✓ Classificação atualizada');
+}
+
+// =============================================
+// RANKING
+// =============================================
+let rankingFilter = 'todos';
+
+function filterRanking(f) { rankingFilter = f; renderRanking(); }
+
+function renderRanking() {
+  const todos = [];
+  state.disciplinas.forEach(d => {
+    d.assuntos.forEach(a => {
+      const s = getAssuntoStats(d.nome, a.nome);
+      if (s.total > 0) {
+        todos.push({ disc: d.nome, assunto: a.nome, classificacao: a.classificacao, pct: s.pct, total: s.total });
+      }
+    });
+  });
+
+  let filtrado = todos;
+  if (rankingFilter === 'essencial') filtrado = todos.filter(x => x.classificacao === 'Essencial');
+  if (rankingFilter === 'baixo') filtrado = todos.filter(x => x.pct < 60);
+
+  const critico = filtrado.filter(x => x.pct < 60).sort((a,b) => a.pct - b.pct);
+  const atencao = filtrado.filter(x => x.pct >= 60 && x.pct < 80).sort((a,b) => a.pct - b.pct);
+  const perto = filtrado.filter(x => x.pct >= 80 && x.pct < 90).sort((a,b) => a.pct - b.pct);
+
+  const renderList = (lista, el) => {
+    if (lista.length === 0) {
+      document.getElementById(el).innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0">Nenhum assunto nesta faixa.</div>';
+      return;
+    }
+    document.getElementById(el).innerHTML = lista.slice(0, 10).map((x, i) => `
+      <div class="rank-item">
+        <div class="rank-num">${String(i+1).padStart(2,'0')}</div>
+        <div class="rank-bar-wrap">
+          <div class="rank-label">
+            <span>${x.disc} · ${x.assunto}</span>
+            <span class="pct-chip ${pctColor(x.pct)}">${x.pct}%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill ${pctColor(x.pct)}" style="width:${x.pct}%"></div></div>
+        </div>
+        <span class="badge badge-${x.classificacao.toLowerCase().replace('á','a').replace('ó','o')}">${x.classificacao}</span>
+      </div>
+    `).join('');
+  };
+
+  renderList(critico, 'rankCritico');
+  renderList(atencao, 'rankAtencao');
+  renderList(perto, 'rankPerto');
+}
+
+// =============================================
+// EVOLUÇÃO / CHARTS
+// =============================================
+function renderEvolucao() {
+  // Preenche select
+  const sel = document.getElementById('evolDisc');
+  if (sel && sel.options.length <= 1) {
+    state.disciplinas.forEach(d => {
+      const o = document.createElement('option');
+      o.value = d.nome;
+      o.textContent = d.nome;
+      sel.appendChild(o);
+    });
+  }
+
+  renderChartEvolucao();
+  renderChartDisc();
+}
+
+function renderChartEvolucao() {
+  const filtroDisc = document.getElementById('evolDisc')?.value || '';
+  const qs = filtroDisc ? state.questoes.filter(q => q.disciplina === filtroDisc) : state.questoes;
+
+  // Agrupa por data
+  const porData = {};
+  qs.forEach(q => {
+    if (!porData[q.data]) porData[q.data] = { total: 0, acertos: 0 };
+    porData[q.data].total += q.total;
+    porData[q.data].acertos += q.acertos;
+  });
+
+  const datas = Object.keys(porData).sort();
+  const pcts = datas.map(d => porData[d].total > 0 ? Math.round(porData[d].acertos / porData[d].total * 100) : 0);
+
+  const ctx = document.getElementById('chartEvolucao').getContext('2d');
+  if (state.chartEvolucao) state.chartEvolucao.destroy();
+
+  state.chartEvolucao = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: datas.map(formatDate),
+      datasets: [{
+        label: '% Acertos',
+        data: pcts,
+        borderColor: '#00e5a0',
+        backgroundColor: 'rgba(0,229,160,0.08)',
+        borderWidth: 2,
+        pointBackgroundColor: '#00e5a0',
+        pointRadius: 4,
+        tension: 0.3,
+        fill: true
+      }, {
+        label: 'Meta 90%',
+        data: datas.map(() => 90),
+        borderColor: 'rgba(255,184,0,0.5)',
+        borderWidth: 1,
+        borderDash: [6,4],
+        pointRadius: 0,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8b95a8', font: { family: 'JetBrains Mono', size: 11 } } } },
+      scales: {
+        x: { ticks: { color: '#4e5666', font: { size: 10 } }, grid: { color: '#1e2330' } },
+        y: { min: 0, max: 100, ticks: { color: '#4e5666', font: { size: 10 }, callback: v => v + '%' }, grid: { color: '#1e2330' } }
+      }
+    }
+  });
+}
+
+function renderChartDisc() {
+  const discs = state.disciplinas.map(d => d.nome.length > 16 ? d.nome.substring(0, 14) + '…' : d.nome);
+  const pcts = state.disciplinas.map(d => getDiscStats(d.nome).pct ?? 0);
+  const colors = pcts.map(p => p >= 90 ? '#00e5a0' : p >= 70 ? '#0090ff' : p >= 60 ? '#ffb800' : '#ff4444');
+
+  const ctx = document.getElementById('chartDisc').getContext('2d');
+  if (state.chartDisc) state.chartDisc.destroy();
+
+  state.chartDisc = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: discs,
+      datasets: [{
+        label: '% Acertos',
+        data: pcts,
+        backgroundColor: colors.map(c => c + '33'),
+        borderColor: colors,
+        borderWidth: 2,
+        borderRadius: 4
+      }, {
+        label: 'Meta 90%',
+        data: discs.map(() => 90),
+        type: 'line',
+        borderColor: 'rgba(255,184,0,0.5)',
+        borderWidth: 1,
+        borderDash: [6,4],
+        pointRadius: 0,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8b95a8', font: { family: 'JetBrains Mono', size: 10 } } } },
+      scales: {
+        x: { ticks: { color: '#4e5666', font: { size: 9 }, maxRotation: 45 }, grid: { color: '#1e2330' } },
+        y: { min: 0, max: 100, ticks: { color: '#4e5666', font: { size: 10 }, callback: v => v + '%' }, grid: { color: '#1e2330' } }
+      }
+    }
+  });
+}
+
+// =============================================
+// INIT
+// =============================================
+function refreshAll() {
+  renderDashboard();
+  renderQuestoesPanel();
+}
+
+function init() {
+  load();
+
+  // Set date
+  const d = new Date();
+  document.getElementById('headerDate').textContent = d.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'short' }).toUpperCase();
+
+  // Render active panel
+  renderDashboard();
+}
+
+init();
+</script>
+</body>
+</html>

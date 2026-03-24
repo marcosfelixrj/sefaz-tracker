@@ -10,6 +10,8 @@
 
   :root {
     --bg: #0a0c10;
+   /* --bg: #07080a;*/
+
     --surface: #111318;
     --surface2: #181c24;
     --surface3: #1e2330;
@@ -29,6 +31,9 @@
     --radius-sm: 8px;
   }
 
+ 
+
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
@@ -42,6 +47,7 @@
   /* GRID BACKGROUND */
   body::before {
     content: '';
+    /*content: none;*/
     position: fixed;
     inset: 0;
     background-image:
@@ -58,6 +64,8 @@
     top: 0;
     z-index: 100;
     background: rgba(10,12,16,.92);
+    /*background: rgba(255,255,255,.9);*/
+
     backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
     padding: 0 24px;
@@ -271,6 +279,14 @@
     background: var(--accent);
     color: #000;
   }
+
+  /*.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}*/
+
+
+
   .btn-primary:hover { background: #00ffc0; transform: translateY(-1px); }
 
   .btn-secondary {
@@ -976,7 +992,14 @@ function save() {
 }
 
 function load() {
-  const raw = localStorage.getItem('sefaz_tracker_v2');
+  //const raw = localStorage.getItem('sefaz_tracker_v2');
+  useEffect(() => {
+  escutarRegistros((dadosFirebase) => {
+    setDados(dadosFirebase);
+  });
+}, []);
+
+
   if (raw) {
     try {
       const loaded = JSON.parse(raw);
@@ -1735,5 +1758,9 @@ function init() {
 
 init();
 </script>
+
+window.salvarRegistro
+window.escutarRegistros
+
 </body>
 </html>

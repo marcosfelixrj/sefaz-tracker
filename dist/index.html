@@ -706,6 +706,7 @@
     nav { padding: 12px 16px 0; }
   }
 </style>
+  <script type="module" crossorigin src="/sefaz-tracker/assets/index-CS-c4qxu.js"></script>
 </head>
 <body>
 
@@ -1027,8 +1028,19 @@ let state = {
 // =============================================
 // PERSIST
 // =============================================
-function save() {
-  localStorage.setItem('sefaz_tracker_v2', JSON.stringify(state));
+//function save() {
+//  localStorage.setItem('sefaz_tracker_v2', JSON.stringify(state));
+//}
+
+
+async function adicionar() {
+  await salvarRegistro({
+    disciplina,
+    assunto,
+    questoes,
+    acertos,
+    data: new Date().toISOString()
+  });
 }
 
 function load() {
@@ -1790,6 +1802,22 @@ function init() {
 }
 
 init();
+
+
+
+
+
 </script>
+
+window.salvarRegistro
+window.escutarRegistros
+
+
+
+
+
+
+
+
 </body>
 </html>

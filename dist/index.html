@@ -1462,7 +1462,7 @@ function fillAssuntos() {
   sel.innerHTML = disc ? disc.assuntos.map(a => `<option value="${a.nome}">${a.nome}</option>`).join('') : '';
 }
 
-/*function registrarQuestao() {
+function registrarQuestao() {
   const disciplina = document.getElementById('qDisciplina').value;
   const assunto = document.getElementById('qAssunto').value;
   const data = document.getElementById('qData').value || today();
@@ -1491,7 +1491,7 @@ function fillAssuntos() {
   renderHistorico();
   toast('✓ Questões registradas com sucesso!');
 }
-  }*/
+  }
 
 
   async function registrarQuestao() {

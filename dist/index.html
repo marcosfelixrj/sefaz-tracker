@@ -706,7 +706,7 @@
     nav { padding: 12px 16px 0; }
   }
 </style>
-  <script type="module" crossorigin src="/sefaz-tracker/assets/index-CS-c4qxu.js"></script>
+  <script type="module" crossorigin src="/sefaz-tracker/assets/index-B52pOY8z.js"></script>
 </head>
 <body>
 
@@ -1060,7 +1060,7 @@ function load() {
         classificacao: 'Importante'
       }))
     }));
-    save();
+    //save();
   }
 }
 
@@ -1081,7 +1081,7 @@ function importData(event) {
     try {
       const imported = JSON.parse(e.target.result);
       state = { ...state, ...imported };
-      save();
+      //save();
       refreshAll();
       toast('✓ Dados importados com sucesso');
     } catch(err) {
@@ -1416,7 +1416,7 @@ function marcarRevisto(disc, assunto, data) {
   const atual = state.ultimaRevisao[key];
   const cicloIdx = atual ? Math.min((atual.cicloIdx ?? 0) + 1, CICLO_REVISAO.length - 1) : 0;
   state.ultimaRevisao[key] = { data, cicloIdx };
-  save();
+  //save();
   gerarPlanoDia();
   toast(`✓ ${assunto} marcado como concluído`);
 }
@@ -1462,7 +1462,7 @@ function fillAssuntos() {
   sel.innerHTML = disc ? disc.assuntos.map(a => `<option value="${a.nome}">${a.nome}</option>`).join('') : '';
 }
 
-function registrarQuestao() {
+/*function registrarQuestao() {
   const disciplina = document.getElementById('qDisciplina').value;
   const assunto = document.getElementById('qAssunto').value;
   const data = document.getElementById('qData').value || today();
@@ -1486,13 +1486,48 @@ function registrarQuestao() {
     state.ultimaRevisao[key] = { data, cicloIdx: 0 };
   } else {
     state.ultimaRevisao[key].data = data;
-  }
-
   save();
   clearFormQ();
   renderHistorico();
   toast('✓ Questões registradas com sucesso!');
 }
+  }*/
+
+
+  async function registrarQuestao() {
+  const disciplina = document.getElementById('qDisciplina').value;
+  const assunto = document.getElementById('qAssunto').value;
+  const data = document.getElementById('qData').value || today();
+  const total = parseInt(document.getElementById('qTotal').value);
+  const acertos = parseInt(document.getElementById('qAcertos').value);
+
+  if (!disciplina || !assunto) return toast('✗ Selecione disciplina e assunto');
+  if (!total || total < 1) return toast('✗ Informe o total');
+  if (acertos > total) return toast('✗ Acertos inválidos');
+
+  const erros = total - acertos;
+  const pct = Math.round(acertos / total * 100);
+
+  const registro = {
+    id: uid(),
+    data,
+    disciplina,
+    assunto,
+    total,
+    acertos,
+    erros,
+    pct
+  };
+
+  // 🔥 SALVA NO FIREBASE
+  await salvarRegistro(registro);
+
+  clearFormQ();
+  toast('✓ Salvo e sincronizado!');
+}
+
+
+  
 
 function clearFormQ() {
   document.getElementById('qTotal').value = '';
@@ -1528,7 +1563,7 @@ function renderHistorico() {
 
 function deletarQuestao(id) {
   state.questoes = state.questoes.filter(q => q.id !== id);
-  save();
+  //save();
   renderHistorico();
   toast('Registro removido');
 }
@@ -1614,7 +1649,7 @@ function toggleAccordion(header) {
 
 function setClassificacao(di, ai, val) {
   state.disciplinas[di].assuntos[ai].classificacao = val;
-  save();
+ // save();
   toast('✓ Classificação atualizada');
 }
 
@@ -1791,7 +1826,12 @@ function refreshAll() {
 }
 
 function init() {
-  load();
+  /*load();*/
+
+  escutarRegistros((dados) => {
+  state.questoes = dados;
+  refreshAll();
+});
 
   // Set date
   const d = new Date();
@@ -1811,7 +1851,6 @@ init();
 
 window.salvarRegistro
 window.escutarRegistros
-
 
 
 
